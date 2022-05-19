@@ -1,0 +1,8 @@
+# vim temp files
+*.swp
+*.swo
+.~lock*
+
+# random python temp files
+__pycache__
+.ipynb_checkpoints
