@@ -11,6 +11,10 @@ function degToRad(degrees) {
     return degrees * Math.PI / 180;
 }
 
+//const fractionPrototype = {
+ //   num    
+//}
+
 // numerator and denominator for each segment must be computed separately for precision 
 const lineSegmentPrototype = {
     lNum: 0,
@@ -25,8 +29,8 @@ function LineSegment( leftNum, leftDen,  rightNum, rightDen ) {
     this.lDen = leftDen;
     this.rNum = rightNum;
     this.rDen = rightDen;
-    [lengthNum, lengthDen] = subtractFrac( rightNum, rightDen, leftNum, leftDen)
-    [this.lengthNum, this.lengthDen] = reduceFrac(lengthNum, lengthDen) 
+    [lengthNum, lengthDen] = subtractFrac( rightNum, rightDen, leftNum, leftDen);
+    [this.lengthNum, this.lengthDen] = reduceFrac(lengthNum, lengthDen); 
 }
 
 function lineSegmentToString() {
@@ -54,7 +58,6 @@ function addFrac(n1, d1, n2, d2){
 
 
 function removeThird(segment) {
-    debugger;
     // the size of each quarter in this segment is the length of the interval divided by 4
    
     [quartNum, quartDen] = subtractFrac(segment.rNum, segment.rDen, segment.lNum, segment.lDen);
@@ -81,13 +84,11 @@ function removeThird(segment) {
 
     const leftSegment = new LineSegment(llNum, llDen, lrNum, lrDen);
     const rightSegment = new LineSegment(rlNum, rlDen, rrNum, rrDen);
-    debugger;
 
     return [leftSegment, rightSegment];
 }
 
 function reduceFrac(numerator, denominator){
-    debugger;
     if (numerator === 0 || denominator === 0){
         return [numerator, denominator];
     } else if ( numerator === denominator ){
@@ -98,15 +99,14 @@ function reduceFrac(numerator, denominator){
     x = numerator;
     y = denominator;
 
-    mod = 100
+    mod = null; 
     while( mod != 0){
         console.log(mod);
-        debugger;
         mod = x % y;
         x = y;
         y = mod;
     }
-    return [ numerator / x, denominator / x ]
+    return [ numerator / x, denominator / x ];
 }
 
 foo = new LineSegment(0, 1, 1, 1);
