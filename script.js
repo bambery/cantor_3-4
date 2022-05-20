@@ -1,3 +1,5 @@
+'use strict';
+
 const fractionPrototype = {
     num: 1,
     den: 1
@@ -77,6 +79,25 @@ function SegmentCollection(segments){
     this.smallestInterval = function smallestInterval() {
         return this.segments[this.segments.length - 1].size.den;
     }
+
+    this.convertToCommonDen = function convertToCommonDen() {
+        const interval = this.smallestInterval(); 
+        const commonDen = this.segments.map(segment => {
+            // yeah I don't like it either, should have found a fraction library or something
+            const Lmultiple     = interval / segment.left.den;
+            const Rmultiple     = interval / segment.right.den;
+            const lenMultiple   = interval / segment.size.den;
+            const newLeft       = new Fraction(segment.left.num * Lmultiple, segment.left.den * Lmultiple);
+            const newRight      = new Fraction(segment.right.num * Rmultiple, segment.right.den * Rmultiple);
+            const newLength     = new Fraction(segment.size.num * lenMultiple, segment.size.den * lenMultiple);
+
+            const tempSeg = new LineSegment(newLeft, newRight); 
+            tempSeg.size = newLength;
+            return tempSeg;
+        });
+        return commonDen;
+    }
+
 };
 
 // pass in the minuend first (the number to be subtracted from)
@@ -155,7 +176,6 @@ function cantor3_4(iterations) {
 };
 
 
-foo = cantor3_4(1);
 
 //////////////////////////////////////////////
 // https://bucephalus.org/text/CanvasHandbook/CanvasHandbook.html
@@ -192,6 +212,9 @@ function drawFraction (ctx, frac, x, y){
     ctx.fillText(frac.den, x, denTop);
 }
 
+// expects: SegmentCollection
+// returns: Same SegmentCollection, but all fractions have been converted to the same denominator
+//
 const canvas = document.querySelector('.myCanvas');
 const width = canvas.width = window.innerWidth;
 const height = canvas.height = window.innerHeight;
@@ -204,7 +227,7 @@ const endpointFontTop = 15;
 const endpointFontBaseline = "top";
 const fontSize = 15;
 const numberlineWidth = 2.0;
-const intervalLineWidth = 2.3; 
+const intervalLineWidth = 3; 
 const fracBarPad = 2;
 const fracBarWidth = 1.0;
 
@@ -227,25 +250,33 @@ ctx.stroke();
 fillCircle(ctx, margin, midH, dotSize);
 fillCircle(ctx, width-margin, midH, dotSize);
 //draw labels for endpoint
-zero = new Fraction(0,1);
+const zero = new Fraction(0,1);
 drawFraction(ctx, zero, margin, midH);
-one = new Fraction(1, 1);
+const one = new Fraction(1, 1);
 drawFraction(ctx, one, width-margin, midH);
 
 function drawPoints(ctx, segCol){
 
     // for rendering this iteration, the smallest interval will determine the endpoints
     const interval = foo.smallestInterval();
-    const intervalLength = width/interval;
+    const intervalLength = ( width - (margin * 2) )/interval;
+    const start = margin;
+    const commonSeg = segCol.convertToCommonDen();
 
-    commonDen = segCol.segments.map(segment => {
-        const Lmultiple = interval / segment.left.den;
-        const Rmultiple = interval / segment.right.den;
-        const newLeft = new Fraction(segment.left.num * Lmultiple, segment.left.den * Lmultiple);
-        const newRight = new Fraction(segment.right.num * Rmultiple, segment.right.den * Rmultiple);
-        return new LineSegment(newLeft, newRight); 
+    ctx.lineWidth = intervalLineWidth;
+    ctx.strokeStyle = 'red';
+
+    commonSeg.forEach( function(segment) {
+        const startPix = start + (segment.left.num * intervalLength);
+        const endPix = startPix + (segment.size.num * intervalLength);
+        ctx.beginPath();
+        ctx.moveTo(startPix, midH);
+        ctx.lineTo(endPix, midH);
+        ctx.stroke();
+//        debugger;
     });
-    debugger;
 }
 
+const foo = cantor3_4(2);
 drawPoints(ctx, foo);
+
