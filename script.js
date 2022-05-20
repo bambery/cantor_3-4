@@ -33,7 +33,7 @@ Fraction.prototype.toString = fractionToString;
 const lineSegmentPrototype = {
     left: new Fraction(0, 1),
     right: new Fraction(1, 1),
-    length: 1
+    size: new Fraction(1, 1)
 };
 
 function LineSegment( leftEndpoint,  rightEndpoint ) {
@@ -41,16 +41,35 @@ function LineSegment( leftEndpoint,  rightEndpoint ) {
     this.right = rightEndpoint;
 
     const length = subtractFrac( this.right, this.left);
-    this.length = reduceFrac(length); 
+    // "length" is a property on Array I don't want to shadow, using "size" for the size of the interval
+    this.size = reduceFrac(length); 
 }
 
 function lineSegmentToString() {
-    return `Left: ${this.left.num}/${this.left.den}, Right: ${this.right.num}/${this.right.den}`;
+    return `Left: ${this.left.num}/${this.left.den}, Right: ${this.right.num}/${this.right.den}, Length: ${this.size}`;
 }
 
 LineSegment.prototype = lineSegmentPrototype;
 LineSegment.prototype.constructor = LineSegment;
 LineSegment.prototype.toString = lineSegmentToString;
+
+// input: array of one or more LineSegments
+function SegmentCollection(segments){
+    this.segments = segments;
+    this.count = segments.length;
+
+    this.size = function(){
+        var size = 0;
+        segments.forEach( segment =>{ size = addFrac(size, segment.size) }); 
+        return size;
+    };
+    
+    this.gapSize = function(){
+        var foo = subtractFrac(new Fraction(1,1) - this.size);
+        return foo;
+    };
+
+}
 
 // pass in the minuend first (the number to be subtracted from)
 function subtractFrac(left, right){
@@ -73,7 +92,7 @@ function removeThird(segment) {
     // returns two line segments and the length of the removed interval
    
     // the length of each quarter is the length of the interval divided by 4
-    const quarter = new Fraction(1, segment.length.den * 4);
+    const quarter = new Fraction(1, segment.size.den * 4);
     
     // left segment
     const ll = segment.left; 
@@ -110,24 +129,23 @@ function reduceFrac(frac){
 }
 
 function cantor3_4(iterations) {
-    if ( iterations <= 1 ) {
+    if ( iterations < 1 ) {
         return -1;
     }
     var results = [new LineSegment( new Fraction(0, 1), new Fraction(1, 1) )];
     while (iterations > 0) {
         var currResults = [];
-        for (const segment in results) {
-            currResults.concat( removeThird(results) );
-        }
-        iterations = iterations - 1;
+        results.forEach( segment => {
+            currResults.push( ...( removeThird(segment) ) );
+        })
         results = currResults;
+        iterations = iterations - 1;
     }
-    debugger;
     return results;
     
 }
 
-cantor3_4();
+foo = cantor3_4(3);
 /*
 const foo = new LineSegment(0, 1, 1, 1);
 const [fooL, fooR] = removeThird(foo);
