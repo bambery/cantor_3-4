@@ -11,105 +11,122 @@ function degToRad(degrees) {
     return degrees * Math.PI / 180;
 }
 
-//const fractionPrototype = {
- //   num    
-//}
+const fractionPrototype = {
+    num: 1,
+    den: 1
+};
+
+function Fraction( numerator, denominator ) {
+    this.num = numerator;
+    this.den = denominator;
+}
+
+function fractionToString() {
+    return `${this.num}/${this.den}`;
+}
+
+Fraction.prototype = fractionPrototype;
+Fraction.prototype.constructor = Fraction;
+Fraction.prototype.toString = fractionToString;
 
 // numerator and denominator for each segment must be computed separately for precision 
 const lineSegmentPrototype = {
-    lNum: 0,
-    lDen: 1,
-    rNum: 1,
-    rDen: 1,
+    left: new Fraction(0, 1),
+    right: new Fraction(1, 1),
     length: 1
-}
+};
 
-function LineSegment( leftNum, leftDen,  rightNum, rightDen ) {
-    this.lNum = leftNum;
-    this.lDen = leftDen;
-    this.rNum = rightNum;
-    this.rDen = rightDen;
-    [lengthNum, lengthDen] = subtractFrac( rightNum, rightDen, leftNum, leftDen);
-    [this.lengthNum, this.lengthDen] = reduceFrac(lengthNum, lengthDen); 
+function LineSegment( leftEndpoint,  rightEndpoint ) {
+    this.left = leftEndpoint;
+    this.right = rightEndpoint;
+    length = subtractFrac( this.right, this.left);
+    this.length = reduceFrac(length); 
 }
 
 function lineSegmentToString() {
-    return `Left: ${this.lNum}/${this.lDen}, Right: ${this.rNum}/${this.rDen}`;
+    return `Left: ${this.left.num}/${this.left.den}, Right: ${this.right.num}/${this.right.den}`;
 }
 
 LineSegment.prototype = lineSegmentPrototype;
 LineSegment.prototype.constructor = LineSegment;
 LineSegment.prototype.toString = lineSegmentToString;
 
-
-function subtractFrac(n1, d1, n2, d2){
-    const numerator = (n1 * d2) - (d1 * n2);
-    const denominator = d1 * d2;
-
-    return [numerator, denominator];
+// pass in the minuend first (the number to be subtracted from)
+function subtractFrac(left, right){
+    const numerator = (left.num * right.den) - (left.den * right.num);
+    const denominator = left.den * right.den;
+    return new Fraction(numerator, denominator); 
 }
 
-function addFrac(n1, d1, n2, d2){
-    const numerator = (n1 * d2) + (d1 * n2);
-    const denominator = d1 * d2;
-
-    return [numerator, denominator];
+function addFrac(left, right){
+    const numerator = (left.num * right.den) + (left.den * right.num);
+    const denominator = left.den * right.den;
+    return new Fraction(numerator, denominator);
 }
-
 
 function removeThird(segment) {
-    // the size of each quarter in this segment is the length of the interval divided by 4
+    //     LEFT           RIGHT
+    // |-----|-----|     |-----|
+    // LL          LR   RL     RR
+    // returns two line segments and the length of the removed interval
    
-    [quartNum, quartDen] = subtractFrac(segment.rNum, segment.rDen, segment.lNum, segment.lDen);
-    
-    quartDen = quartDen * 4;
+    // the length of each quarter is the length of the interval divided by 4
+    const quarter = new Fraction(1, segment.length.den * 4);
     
     // left segment
-    llNum = segment.lNum; 
-    llDen = segment.lDen;
+    ll = segment.left; 
+    // (2 * the length of a quarter) + left endpoint
+    lr = addFrac(new Fraction(quarter.num * 2, quarter.den), ll);
+    leftSeg = new LineSegment( reduceFrac(ll), reduceFrac(lr) );
 
-    [lrNum, lrDen] = addFrac(2 * quartNum, quartDen, llNum, llDen);
-    
     // right segment
-    [rlNum, rlDen] = subtractFrac(segment.rNum, segment.rDen, quartNum, quartDen);
+    rr = segment.right;
+    rl = subtractFrac(rr, quarter);
+    rightSeg = new LineSegment( reduceFrac(rl), reduceFrac(rr) );
 
-    rrNum = segment.rNum; 
-    rrDen = segment.rDen; 
-
-    console.log(rrDen);
-   [llNum, llDen] = reduceFrac(llNum, llDen);
-   [lrNum, lrDen] = reduceFrac(lrNum, lrDen);
-   [rrNum, rrDen] = reduceFrac(rrNum, rrDen);
-   [rlNum, rlDen] = reduceFrac(rlNum, rlDen);
-
-    const leftSegment = new LineSegment(llNum, llDen, lrNum, lrDen);
-    const rightSegment = new LineSegment(rlNum, rlDen, rrNum, rrDen);
-
-    return [leftSegment, rightSegment];
+    return [leftSeg, rightSeg];
 }
 
-function reduceFrac(numerator, denominator){
-    if (numerator === 0 || denominator === 0){
-        return [numerator, denominator];
-    } else if ( numerator === denominator ){
+function reduceFrac(frac){
+    if (frac.num === 0 || frac.den === 0){
+        return frac; 
+    } else if ( frac.num === frac.den ){
         // do not reduce the rightmost interval
-        return [numerator, denominator];
+        return frac;
     }
 
-    x = numerator;
-    y = denominator;
+    x = frac.num;
+    y = frac.den;
 
     mod = null; 
     while( mod != 0){
-        console.log(mod);
         mod = x % y;
         x = y;
         y = mod;
     }
-    return [ numerator / x, denominator / x ];
+    return new Fraction( frac.num / x, frac.den / x );
 }
 
-foo = new LineSegment(0, 1, 1, 1);
+function cantor3_4(iterations) {
+    if ( iterations <= 1 ) {
+        return -1;
+    }
+    results = [new LineSegment( new Fraction(0, 1), new Fraction(1, 1) )];
+    while (iterations > 0) {
+        currResults = []
+        for (const segment in results) {
+            noop;
+            
+        }
+        iterations = iterations - 1;
+    }
+    debugger;
+    
+}
+
+cantor3_4();
+/*
+const foo = new LineSegment(0, 1, 1, 1);
 const [fooL, fooR] = removeThird(foo);
 console.log("finished 1");
 const [barL, barR] = removeThird(fooL);
@@ -120,3 +137,4 @@ const [mooL, mooR] = removeThird(barL);
 const [booL, booR] = removeThird(barR);
 const [shoeL, shoeR] = removeThird(bazL);
 const [newL, newR] = removeThird(bazR);
+*/
