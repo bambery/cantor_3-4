@@ -39,7 +39,8 @@ const lineSegmentPrototype = {
 function LineSegment( leftEndpoint,  rightEndpoint ) {
     this.left = leftEndpoint;
     this.right = rightEndpoint;
-    length = subtractFrac( this.right, this.left);
+
+    const length = subtractFrac( this.right, this.left);
     this.length = reduceFrac(length); 
 }
 
@@ -55,6 +56,7 @@ LineSegment.prototype.toString = lineSegmentToString;
 function subtractFrac(left, right){
     const numerator = (left.num * right.den) - (left.den * right.num);
     const denominator = left.den * right.den;
+    // can/should I declare this return value const?
     return new Fraction(numerator, denominator); 
 }
 
@@ -74,15 +76,15 @@ function removeThird(segment) {
     const quarter = new Fraction(1, segment.length.den * 4);
     
     // left segment
-    ll = segment.left; 
+    const ll = segment.left; 
     // (2 * the length of a quarter) + left endpoint
-    lr = addFrac(new Fraction(quarter.num * 2, quarter.den), ll);
-    leftSeg = new LineSegment( reduceFrac(ll), reduceFrac(lr) );
+    const lr = addFrac(new Fraction(quarter.num * 2, quarter.den), ll);
+    const leftSeg = new LineSegment( reduceFrac(ll), reduceFrac(lr) );
 
     // right segment
-    rr = segment.right;
-    rl = subtractFrac(rr, quarter);
-    rightSeg = new LineSegment( reduceFrac(rl), reduceFrac(rr) );
+    const rr = segment.right;
+    const rl = subtractFrac(rr, quarter);
+    const rightSeg = new LineSegment( reduceFrac(rl), reduceFrac(rr) );
 
     return [leftSeg, rightSeg];
 }
@@ -95,10 +97,10 @@ function reduceFrac(frac){
         return frac;
     }
 
-    x = frac.num;
-    y = frac.den;
+    var x = frac.num;
+    var y = frac.den;
 
-    mod = null; 
+    var mod = null; 
     while( mod != 0){
         mod = x % y;
         x = y;
@@ -111,16 +113,17 @@ function cantor3_4(iterations) {
     if ( iterations <= 1 ) {
         return -1;
     }
-    results = [new LineSegment( new Fraction(0, 1), new Fraction(1, 1) )];
+    var results = [new LineSegment( new Fraction(0, 1), new Fraction(1, 1) )];
     while (iterations > 0) {
-        currResults = []
+        var currResults = [];
         for (const segment in results) {
-            noop;
-            
+            currResults.concat( removeThird(results) );
         }
         iterations = iterations - 1;
+        results = currResults;
     }
     debugger;
+    return results;
     
 }
 
