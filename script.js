@@ -53,22 +53,37 @@ LineSegment.prototype = lineSegmentPrototype;
 LineSegment.prototype.constructor = LineSegment;
 LineSegment.prototype.toString = lineSegmentToString;
 
+// write a function for checking type via obj.__proto__.constructor.name
+//function type(obj){
+//
+//}
+
 // input: array of one or more LineSegments
 function SegmentCollection(segments){
     this.segments = segments;
     this.count = segments.length;
 
-    this.size = function(){
-        var size = 0;
+    this.size = function size(){
+        var size = new Fraction(0, 1);
         segments.forEach( segment =>{ size = addFrac(size, segment.size) }); 
+        size = reduceFrac(size);
         return size;
     };
     
-    this.gapSize = function(){
-        var foo = subtractFrac(new Fraction(1,1) - this.size);
+    this.gapSize = function gapSize(){
+        var foo = subtractFrac(new Fraction(1,1), this.size());
         return foo;
     };
 
+    this.allGaps = function allGaps(){
+        segments.forEach( segment => { console.log(segment.toString()) });
+        console.log(`Total gap size: ${this.gapSize()}.`);
+    }
+
+    this.push = function push(segmentArr){
+
+        segmentArr.forEach( segment => { this.segments.push(segment) } );
+    }
 }
 
 // pass in the minuend first (the number to be subtracted from)
@@ -133,19 +148,21 @@ function cantor3_4(iterations) {
         return -1;
     }
     var results = [new LineSegment( new Fraction(0, 1), new Fraction(1, 1) )];
+    const myCol = new SegmentCollection(results);
+
     while (iterations > 0) {
         var currResults = [];
-        results.forEach( segment => {
+        myCol.segments.forEach( segment => {
             currResults.push( ...( removeThird(segment) ) );
         })
-        results = currResults;
+        myCol.segments = currResults;
         iterations = iterations - 1;
     }
-    return results;
-    
+    return myCol;
 }
 
-foo = cantor3_4(3);
+//foo = cantor3_4(3);
+
 /*
 const foo = new LineSegment(0, 1, 1, 1);
 const [fooL, fooR] = removeThird(foo);
