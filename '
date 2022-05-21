@@ -8,25 +8,6 @@ const fractionPrototype = {
 function Fraction( numerator, denominator ) {
     this.num = numerator;
     this.den = denominator;
-    this.reduceFrac = function reduceFrac(){
-        if (this.num === 0 || this.den === 0){
-            return this; 
-        } else if ( this.num === this.den ){
-            // do not reduce the rightmost interval
-            return this;
-        }
-
-        var x = this.num;
-        var y = this.den;
-
-        var mod = null; 
-        while( mod != 0){
-            mod = x % y;
-            x = y;
-            y = mod;
-        }
-        return new Fraction( this.num / x, this.den / x );
-    };
 };
 
 function fractionToString() {
@@ -52,7 +33,7 @@ function LineSegment( leftEndpoint,  rightEndpoint ) {
 
     const length = subtractFrac( this.right, this.left);
     // "length" is a property on Array I don't want to shadow, using "size" for the size of the interval
-    this.size = length.reduceFrac(); 
+    this.size = reduceFrac(length); 
 };
 
 function lineSegmentToString() {
@@ -77,7 +58,7 @@ function SegmentCollection(segments){
     this.size = function size(){
         var size = new Fraction(0, 1);
         this.segments.forEach( segment =>{ size = addFrac(size, segment.size) }); 
-        size = size.reduceFrac();
+        size = reduceFrac(size);
         return size;
     };
     
@@ -146,16 +127,35 @@ function removeThird(segment) {
     const ll = segment.left; 
     // (2 * the length of a quarter) + left endpoint
     const lr = addFrac(new Fraction(quarter.num * 2, quarter.den), ll);
-    const leftSeg = new LineSegment( ll.reduceFrac(), lr.reduceFrac() );
+    const leftSeg = new LineSegment( reduceFrac(ll), reduceFrac(lr) );
 
     // right segment
     const rr = segment.right;
     const rl = subtractFrac(rr, quarter);
-    const rightSeg = new LineSegment( rl.reduceFrac(), rr.reduceFrac() );
+    const rightSeg = new LineSegment( reduceFrac(rl), reduceFrac(rr) );
 
     return [leftSeg, rightSeg];
 };
 
+function reduceFrac(frac){
+    if (frac.num === 0 || frac.den === 0){
+        return frac; 
+    } else if ( frac.num === frac.den ){
+        // do not reduce the rightmost interval
+        return frac;
+    }
+
+    var x = frac.num;
+    var y = frac.den;
+
+    var mod = null; 
+    while( mod != 0){
+        mod = x % y;
+        x = y;
+        y = mod;
+    }
+    return new Fraction( frac.num / x, frac.den / x );
+};
 
 function cantor3_4(iterations) {
     if ( iterations < 1 ) {
@@ -193,7 +193,7 @@ function drawFraction (ctx, frac, x, y){
     const oldStyle = ctx.strokeStyle;
     const oldLineWidth = ctx.lineWidth;
 
-    frac = frac.reduceFrac();
+    frac = reduceFrac(frac);
 
     ctx.textAlign = 'center';
     ctx.lineWidth = fracBarWidth; 
@@ -286,9 +286,16 @@ function drawPoints(ctx, segCol){
         fillCircle(ctx, endPix, midH, dotSize);
         drawFraction(ctx, segment.left, startPix, midH);
         drawFraction(ctx, segment.right, endPix, midH);
+
+//        debugger;
+        //
+
+        // draw endpoints and labels on the numberline
+        //fillCircle(ctx, margin, midH, dotSize);
+        //fillCircle(ctx, width-margin, midH, dotSize);
     });
 }
 
-const foo = cantor3_4(4);
+const foo = cantor3_4(3);
 drawPoints(ctx, foo);
 
