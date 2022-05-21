@@ -161,8 +161,9 @@ function cantor3_4(iterations) {
     if ( iterations < 1 ) {
         return -1;
     }
-    var results = [new LineSegment( new Fraction(0, 1), new Fraction(1, 1) )];
-    const myCol = new SegmentCollection(results);
+    const initialCollection = [new LineSegment( new Fraction(0, 1), new Fraction(1, 1) )];
+    const results = [];
+    const myCol = new SegmentCollection(initialCollection);
 
     while (iterations > 0) {
         var currResults = [];
@@ -171,8 +172,9 @@ function cantor3_4(iterations) {
         })
         myCol.segments = currResults;
         iterations = iterations - 1;
+        results.push(...currResults);
     }
-    return myCol;
+    return results;
 };
 
 
@@ -231,26 +233,7 @@ function drawFraction (ctx, frac, x, y){
     ctx.font = oldFont;
 }
 
-const canvas = document.querySelector('.myCanvas');
-const width = canvas.width = window.innerWidth;
-//const height = canvas.height = window.innerHeight;
-const height = canvas.height = 200; 
-const ctx = canvas.getContext('2d');
 
-const midH = Math.floor(height/2);
-const margin = 30;
-const dotSize = 5;
-const fontSize = 15;
-
-// make bg black
-ctx.fillStyle = 'rgb(0, 0, 0)';
-ctx.fillRect(0, 0, width, height);
-
-// set some style defaults
-ctx.strokeStyle = 'white';
-ctx.fillStyle = 'white';
-ctx.textAlign = 'center';
-ctx.font = `${fontSize}px Verdana`;
 
 
 function drawNumberline(ctx, segCol){
@@ -302,6 +285,46 @@ function drawNumberline(ctx, segCol){
     });
 }
 
-const foo = cantor3_4(3);
-drawNumberline(ctx, foo);
 
+function createCanvas(index){
+    const canvasesDiv = document.getElementById("canvases");
+    const newCanvasDiv = document.createElement("div");
+    newCanvasDiv.className = ".numberline";
+    canvasesDiv.appendChild(newCanvasDiv);
+
+    const canvas = document.createElement("canvas");
+    canvas.id = `canvas-${index + 1}`;
+    const width = canvas.width = window.innerWidth;
+    const height = canvas.height = 200;
+    newCanvasDiv.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+
+    // make bg black
+    ctx.fillStyle = 'rgb(0, 0, 0)';
+    ctx.fillRect(0, 0, width, height);
+
+    return ctx;
+}
+
+const numberlines = cantor3_4(1);
+
+numberlines.forEach((segmentColl, index) => {
+    const ctx = createCanvas(index);
+
+    const width = ctx.canvas.offsetWidth;
+    const height = ctx.canvas.offsetHeight;
+    const midH = Math.floor(height/2);
+
+    var margin = 30;
+    const dotSize = 5;
+    const fontSize = 15;
+    ctx.textAlign = 'center';
+    ctx.font = `${fontSize}px Verdana`;
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = 'white';
+
+    drawNumberline(ctx, segmentColl);
+});
+
+//drawNumberline(ctx, foo);
