@@ -192,10 +192,17 @@ function drawFraction (ctx, frac, x, y){
 
     const oldStyle = ctx.strokeStyle;
     const oldLineWidth = ctx.lineWidth;
+    const oldFont = ctx.font;
+
+    const endpointFontBaseline = "top";
+    const fracBarWidth = 1.0;
+    const fracBarPad = 2;
+    const endpointFontTop = 15;
+
+    ctx.font = `${fontSize}px Verdana`;
 
     frac = frac.reduceFrac();
 
-    ctx.textAlign = 'center';
     ctx.lineWidth = fracBarWidth; 
     ctx.textBaseline = endpointFontBaseline;
     ctx.fillStyle = 'white';
@@ -218,54 +225,52 @@ function drawFraction (ctx, frac, x, y){
     const denTop = barTop + fracBarWidth + fracBarPad;
     ctx.fillText(frac.den, x, denTop);
 
+    // return changed styles to what they were before this fxn call
     ctx.strokeStyle = oldStyle;
     ctx.lineWidth = oldLineWidth;
+    ctx.font = oldFont;
 }
 
-// expects: SegmentCollection
-// returns: Same SegmentCollection, but all fractions have been converted to the same denominator
-//
 const canvas = document.querySelector('.myCanvas');
 const width = canvas.width = window.innerWidth;
-const height = canvas.height = window.innerHeight;
+//const height = canvas.height = window.innerHeight;
+const height = canvas.height = 200; 
 const ctx = canvas.getContext('2d');
 
 const midH = Math.floor(height/2);
 const margin = 30;
 const dotSize = 5;
-const endpointFontTop = 15;
-const endpointFontBaseline = "top";
 const fontSize = 15;
-const numberlineWidth = 2.0;
-const intervalLineWidth = 4.0; 
-const fracBarPad = 2;
-const fracBarWidth = 1.0;
 
 // make bg black
 ctx.fillStyle = 'rgb(0, 0, 0)';
 ctx.fillRect(0, 0, width, height);
 
 // set some style defaults
-ctx.strokeStyle = '#ffffff';
-ctx.fillStyle = '#ffffff';
+ctx.strokeStyle = 'white';
+ctx.fillStyle = 'white';
+ctx.textAlign = 'center';
 ctx.font = `${fontSize}px Verdana`;
 
-// draw numberline
-ctx.lineWidth = numberlineWidth;
-ctx.beginPath();
-ctx.moveTo(margin, midH);
-ctx.lineTo(width - margin, midH);
-ctx.stroke();
 
-function drawPoints(ctx, segCol){
+function drawNumberline(ctx, segCol){
+    const numberlineWidth = 2.0;
+    const intervalLineWidth = 4.0; 
 
+    // draw numberline
+    ctx.lineWidth = numberlineWidth;
+    ctx.beginPath();
+    ctx.moveTo(margin, midH);
+    ctx.lineTo(width - margin, midH);
+    ctx.stroke();
+    
     // for rendering this iteration, the smallest interval will determine the endpoints
     const interval = foo.smallestInterval();
     const intervalLength = ( width - (margin * 2) )/interval;
     const start = margin;
     const commonSeg = segCol.convertToCommonDen();
 
-    commonSeg.forEach( function(segment) {
+    commonSeg.forEach( function(segment, index) {
         // draw red segments on numberline
         const startPix = start + (segment.left.num * intervalLength);
         const segLength = segment.size.num * intervalLength; 
@@ -286,9 +291,17 @@ function drawPoints(ctx, segCol){
         fillCircle(ctx, endPix, midH, dotSize);
         drawFraction(ctx, segment.left, startPix, midH);
         drawFraction(ctx, segment.right, endPix, midH);
+
+        //label the segments from left to right 
+        ctx.fillStyle = '#609ab8';
+        ctx.textBaseline = 'bottom';
+        const numBottomMargin = 15;
+        ctx.font = `30px Verdana`;
+        ctx.fillText(index + 1, midPoint, midH - numBottomMargin);
+
     });
 }
 
-const foo = cantor3_4(4);
-drawPoints(ctx, foo);
+const foo = cantor3_4(3);
+drawNumberline(ctx, foo);
 
