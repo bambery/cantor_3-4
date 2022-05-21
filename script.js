@@ -82,26 +82,39 @@ function SegmentCollection(segments){
     };
     
     this.gapSize = function gapSize(){
-        var foo = subtractFrac(new Fraction(1,1), this.size());
-        return foo;
+        return subtractFrac(new Fraction(1,1), this.size());
     };
 
-    this.allGaps = function allGaps(){
-        this.segments.forEach( segment => { console.log(segment.toString()) });
-        console.log(`Total gap size: ${this.gapSize()}.`);
-    }
+    this.gaps = function allGaps(){
+        const gaps = [];
+        for(let i=0; i < this.segments.length - 1; i++) {
+            const gap = new LineSegment( this.segments[i].right, this.segments[i + 1].left )
+            gaps.push(gap);
+        }
+        return gaps;
+    };
 
     this.push = function push(segmentArr){
         segmentArr.forEach( segment => { this.segments.push(segment) } );
-    }
+    };
 
     this.smallestInterval = function smallestInterval() {
         return this.segments[this.segments.length - 1].size.den;
-    }
+    };
 
-    this.convertToCommonDen = function convertToCommonDen() {
+    this.convertToCommonDen = function convertToCommonDen(segment_or_gap) {
+        if( segment_or_gap === "segment" ){
+            var segArr = this.segments;
+        } else if ( segment_or_gap === "gap" ){
+            // TODO: this should not be a fxn when .segments is an Arr - convert to iife or find other solution
+            // probably should refactor the structures now that I know how I am using them
+            var segArr = this.gaps();
+        } else {
+            throw {toString: function() { return "You must pass 'segment' or 'gap'";} }; 
+        }
+
         const interval = this.smallestInterval(); 
-        const commonDen = this.segments.map(segment => {
+        const commonDen = segArr.map(segment => {
             // yeah I don't like it either, should have found a fraction library or something
             const Lmultiple     = interval / segment.left.den;
             const Rmultiple     = interval / segment.right.den;
@@ -115,7 +128,7 @@ function SegmentCollection(segments){
             return tempSeg;
         });
         return commonDen;
-    }
+    };
 
 };
 
@@ -162,19 +175,19 @@ function cantor3_4(iterations) {
         return -1;
     }
     const initialCollection = [new LineSegment( new Fraction(0, 1), new Fraction(1, 1) )];
+    var myCol = new SegmentCollection(initialCollection);
     const results = [];
-    const myCol = new SegmentCollection(initialCollection);
 
     while (iterations > 0) {
         var currResults = [];
         myCol.segments.forEach( segment => {
             currResults.push( ...( removeThird(segment) ) );
         })
-        myCol.segments = currResults;
+        myCol = new SegmentCollection( currResults );
         iterations = iterations - 1;
-        results.push(...currResults);
+        results.push(myCol);
     }
-    return results;
+    return results; 
 };
 
 
@@ -195,13 +208,15 @@ function drawFraction (ctx, frac, x, y){
     const oldStyle = ctx.strokeStyle;
     const oldLineWidth = ctx.lineWidth;
     const oldFont = ctx.font;
+//    const oldBaseline = ctx.u
 
     const endpointFontBaseline = "top";
     const fracBarWidth = 1.0;
     const fracBarPad = 2;
     const endpointFontTop = 15;
+    const fracFontSize = 15; 
 
-    ctx.font = `${fontSize}px Verdana`;
+    ctx.font = `${fracFontSize}px Verdana`;
 
     frac = frac.reduceFrac();
 
@@ -217,9 +232,9 @@ function drawFraction (ctx, frac, x, y){
     // draw bar under numerator
     const lineLen = Math.max( ctx.measureText(frac.num).width, ctx.measureText(frac.den).width );
     ctx.beginPath()
-    // what's that sneaky 0.5 at the end? It's so the line is crisp and white and not grey and fat
+    // what's that sneaky 0.5 at the end? It's so the line is crisp and white and not fat and grey
     // https://bucephalus.org/text/CanvasHandbook/CanvasHandbook.html#linewidth
-    const barTop = numTop + fontSize + fracBarPad + 0.5;
+    const barTop = numTop + fracFontSize + fracBarPad + 0.5;
     ctx.moveTo( x - lineLen/2, barTop);
     ctx.lineTo(x + lineLen/2, barTop);
     ctx.stroke();
@@ -228,103 +243,142 @@ function drawFraction (ctx, frac, x, y){
     ctx.fillText(frac.den, x, denTop);
 
     // return changed styles to what they were before this fxn call
+    // TODO: try getting rid of this and explicitly setting attr each time.
+    // do people write helpers to set certain contexts that must be returned to frequently?
     ctx.strokeStyle = oldStyle;
     ctx.lineWidth = oldLineWidth;
     ctx.font = oldFont;
 }
 
+function drawAllNumberlines(numIter){
 
+    function drawNumberline(ctx, segCol){
+        const numberlineWidth = 2.0;
+        const intervalLineWidth = 4.0; 
 
-
-function drawNumberline(ctx, segCol){
-    const numberlineWidth = 2.0;
-    const intervalLineWidth = 4.0; 
-
-    // draw numberline
-    ctx.lineWidth = numberlineWidth;
-    ctx.beginPath();
-    ctx.moveTo(margin, midH);
-    ctx.lineTo(width - margin, midH);
-    ctx.stroke();
-    
-    // for rendering this iteration, the smallest interval will determine the endpoints
-    const interval = foo.smallestInterval();
-    const intervalLength = ( width - (margin * 2) )/interval;
-    const start = margin;
-    const commonSeg = segCol.convertToCommonDen();
-
-    commonSeg.forEach( function(segment, index) {
-        // draw red segments on numberline
-        const startPix = start + (segment.left.num * intervalLength);
-        const segLength = segment.size.num * intervalLength; 
-        const endPix = startPix + segLength; 
-        // midpoint of this segment
-        const midPoint = (segLength/2) + startPix;
-
-        ctx.lineWidth = intervalLineWidth;
-        ctx.strokeStyle = 'red';
+        // draw numberline
+        ctx.lineWidth = numberlineWidth;
         ctx.beginPath();
-        ctx.moveTo(startPix, midH);
-        ctx.lineTo(endPix, midH);
+        ctx.moveTo(margin, midH);
+        ctx.lineTo(width - margin, midH);
         ctx.stroke();
+        
+        // for rendering this iteration, the smallest interval will determine the endpoints
+        const interval = segCol.smallestInterval();
+        const intervalLength = ( width - (margin * 2) )/interval;
+        const start = margin;
+        const commonSeg = segCol.convertToCommonDen("segment");
 
-        // label endpoints of segment
+        commonSeg.forEach( function(segment, index) {
+            // draw red segments on numberline
+            const startPix = start + (segment.left.num * intervalLength);
+            const segLength = segment.size.num * intervalLength; 
+            const endPix = startPix + segLength; 
+            // midpoint of this segment
+            const midPoint = (segLength/2) + startPix;
+
+            ctx.lineWidth = intervalLineWidth;
+            ctx.strokeStyle = 'red';
+            ctx.beginPath();
+            ctx.moveTo(startPix, midH);
+            ctx.lineTo(endPix, midH);
+            ctx.stroke();
+
+            // label endpoints of segment
+            ctx.fillStyle = 'white';
+            fillCircle(ctx, startPix, midH, dotSize);
+            fillCircle(ctx, endPix, midH, dotSize);
+            drawFraction(ctx, segment.left, startPix, midH);
+            drawFraction(ctx, segment.right, endPix, midH);
+
+            //label the segments from left to right 
+            ctx.fillStyle = '#609ab8';
+            ctx.textBaseline = 'bottom';
+            const numBottomMargin = 15;
+            ctx.font = `30px Verdana`;
+            ctx.fillText(index + 1, midPoint, midH - numBottomMargin);
+        });
+
+        const commonGap = segCol.convertToCommonDen("gap");
+        commonGap.forEach( function(segment, index) {
+            const startPix = start + (segment.left.num * intervalLength);
+            const segLength = segment.size.num * intervalLength;
+            const midPoint = (segLength/2) + startPix;
+            
+            //label the segments from left to right 
+            ctx.fillStyle = '#e5b513';
+            ctx.textBaseline = 'bottom';
+            const numBottomMargin = 15;
+            ctx.font = `20px Verdana`;
+            ctx.fillText( String.fromCharCode(index + 65), midPoint, midH - numBottomMargin);
+        });
+
+
+    }
+
+    const numberlines = cantor3_4(numIter);
+
+    for( let i = 0; i < numberlines.length; i++ ){
+        const [ctx, infoDiv] = createElements(i);
+
+        var width = ctx.canvas.offsetWidth;
+        var height = ctx.canvas.offsetHeight;
+        var midH = Math.floor(height/2);
+
+        var margin = 30;
+        var dotSize = 5;
+        var fontSize = 15;
+        
+        // make bg black
+        ctx.fillStyle = 'rgb(0, 0, 0)';
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.textAlign = 'center';
+        ctx.font = `${fontSize}px Verdana`;
+        ctx.strokeStyle = 'white';
         ctx.fillStyle = 'white';
-        fillCircle(ctx, startPix, midH, dotSize);
-        fillCircle(ctx, endPix, midH, dotSize);
-        drawFraction(ctx, segment.left, startPix, midH);
-        drawFraction(ctx, segment.right, endPix, midH);
 
-        //label the segments from left to right 
-        ctx.fillStyle = '#609ab8';
-        ctx.textBaseline = 'bottom';
-        const numBottomMargin = 15;
-        ctx.font = `30px Verdana`;
-        ctx.fillText(index + 1, midPoint, midH - numBottomMargin);
-
-    });
+        drawNumberline(ctx, numberlines[i]);
+        //displayInfo(infoDiv, numberlines[i]);
+    };
 }
 
+function createElements(index){
+    //grab the parent div
+    const displayDiv = document.getElementById("all-numberlines");
+    
+    //create a new div to contain the numberline and its details
+    const newNumContentDiv = document.createElement("div");
+    newNumContentDiv.className =`.numberline-detail-wrapper-${index +1}`;
+    displayDiv.appendChild(newNumContentDiv);
 
-function createCanvas(index){
-    const canvasesDiv = document.getElementById("canvases");
+    //create div to hold the numberline graphic 
     const newCanvasDiv = document.createElement("div");
-    newCanvasDiv.className = ".numberline";
-    canvasesDiv.appendChild(newCanvasDiv);
+    newCanvasDiv.className = `.numberline`;
 
+    // create canvas 
     const canvas = document.createElement("canvas");
-    canvas.id = `canvas-${index + 1}`;
+    canvas.className = `canvas`;
+    // attach canvas to .numberline div
+    newCanvasDiv.appendChild(canvas);
+    //attach numberline to wrapper 
+    newNumContentDiv.appendChild(newCanvasDiv);
+
+    // create elements for displaying segment and gap info 
+    const newCollectionDiv = document.createElement("div");
+    newCollectionDiv.className = ".segmentCollection";
+    newCollectionDiv.id = `collection}`;
+    newNumContentDiv.appendChild(newCollectionDiv);
+
+    // set properties on the canavs
     const width = canvas.width = window.innerWidth;
     const height = canvas.height = 200;
-    newCanvasDiv.appendChild(canvas);
-
+    // grab context
     const ctx = canvas.getContext('2d');
-
-    // make bg black
-    ctx.fillStyle = 'rgb(0, 0, 0)';
-    ctx.fillRect(0, 0, width, height);
-
-    return ctx;
+    
+    // return canvas context and contentDiv
+    return [ctx, newCollectionDiv];
 }
 
-const numberlines = cantor3_4(1);
+drawAllNumberlines(3);
 
-numberlines.forEach((segmentColl, index) => {
-    const ctx = createCanvas(index);
-
-    const width = ctx.canvas.offsetWidth;
-    const height = ctx.canvas.offsetHeight;
-    const midH = Math.floor(height/2);
-
-    var margin = 30;
-    const dotSize = 5;
-    const fontSize = 15;
-    ctx.textAlign = 'center';
-    ctx.font = `${fontSize}px Verdana`;
-    ctx.strokeStyle = 'white';
-    ctx.fillStyle = 'white';
-
-    drawNumberline(ctx, segmentColl);
-});
-
-//drawNumberline(ctx, foo);
