@@ -1,4 +1,13 @@
 body {
     margin:0;
-    overflow:hidden;
+    overflow:auto;
+    font: 16px "Verdana", sans-serif;
+}
+
+.segment-table, .segment-row{
+    border-collapse: collapse;
+    border-style: solid;
+    border-color: #609ab8;
+    border-width: 3px;
+    padding: 10px;
 }

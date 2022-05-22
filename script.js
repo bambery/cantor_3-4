@@ -284,42 +284,129 @@ function drawAllNumberlines(numIter){
             ctx.lineTo(endPix, midH);
             ctx.stroke();
 
-            // label endpoints of segment
+            // you need a really wide screen to be able to see the endpoints on the numberline past the 3rd iteration
+            // For the fourth iter and beyond, omit the labels but draw the points
+            // doin this check twice - how to do it only once?
             ctx.fillStyle = 'white';
             fillCircle(ctx, startPix, midH, dotSize);
             fillCircle(ctx, endPix, midH, dotSize);
-            drawFraction(ctx, segment.left, startPix, midH);
-            drawFraction(ctx, segment.right, endPix, midH);
 
-            //label the segments from left to right 
-            ctx.fillStyle = '#609ab8';
-            ctx.textBaseline = 'bottom';
-            const numBottomMargin = 15;
-            ctx.font = `30px Verdana`;
-            ctx.fillText(index + 1, midPoint, midH - numBottomMargin);
-        });
-
-        const commonGap = segCol.convertToCommonDen("gap");
-        commonGap.forEach( function(segment, index) {
-            const startPix = start + (segment.left.num * intervalLength);
-            const segLength = segment.size.num * intervalLength;
-            const midPoint = (segLength/2) + startPix;
+            if( segCol.count < 9 ){
+                ctx.font = `30px Verdana`;
+                // label endpoints of segment
+                drawFraction(ctx, segment.left, startPix, midH);
+                drawFraction(ctx, segment.right, endPix, midH);
+                
+            } else if ( segCol.count < 32 ){
+                ctx.font = "16px Verdana"
+            } else if (segCol.count >= 32){
+                ctx.font = "8px Verdana"
+            }
             
             //label the segments from left to right 
             ctx.fillStyle = '#e5b513';
             ctx.textBaseline = 'bottom';
             const numBottomMargin = 15;
-            ctx.font = `20px Verdana`;
-            ctx.fillText( String.fromCharCode(index + 65), midPoint, midH - numBottomMargin);
+            ctx.fillText(index + 1, midPoint, midH - numBottomMargin);
         });
 
+        if( segCol.count < 9 ){
+            const commonGap = segCol.convertToCommonDen("gap");
+            commonGap.forEach( function(segment, index) {
+                const startPix = start + (segment.left.num * intervalLength);
+                const segLength = segment.size.num * intervalLength;
+                const midPoint = (segLength/2) + startPix;
+                
+                //label the segments from left to right 
+                ctx.fillStyle = '#609ab8';
+                ctx.textBaseline = 'bottom';
+                const numBottomMargin = 15;
+                ctx.font = `20px Verdana`;
+                ctx.fillText( String.fromCharCode(index + 65), midPoint, midH - numBottomMargin );
+            });
+        }
+    } // end drawNumberline
 
-    }
+    // this cannot be combined with displaying the numberline because the denominators are in reduced form for each endpoint, which does not work for the numberline
+    function displayInfo(displayDiv, segmentCollection){
+        if ('content' in document.createElement('template')) {
+            // display summary
+            var template = document.querySelector("#segment-data-summary-template");
+            var summaryContainer = document.createElement('div');
+            summaryContainer.className = 'segment-summary-container';
+            displayDiv.appendChild(summaryContainer);
+
+            // segments
+            var cloneSummarySegment = template.content.cloneNode(true);
+            var th = cloneSummarySegment.querySelectorAll("th");
+            th[0].textContent = "Number of Intervals:";
+            th[1].textContent = "Total Length of Intervals:";
+
+            var td = cloneSummarySegment.querySelectorAll("td");
+            td[0].textContent = `${segmentCollection.count.toString()}`;
+            td[1].textContent = `${segmentCollection.size().toString()}`;
+            summaryContainer.appendChild(cloneSummarySegment);
+
+            // gaps
+            var cloneGapSegment = template.content.cloneNode(true);
+            th = cloneGapSegment.querySelectorAll("th");
+            th[0].textContent = "Number of Gaps:";
+            th[1].textContent = "Total Length of Gaps:";
+
+            td = cloneGapSegment.querySelectorAll("td");
+            td[0].textContent = `${segmentCollection.count.toString()}`;
+            td[1].textContent = `${segmentCollection.size().toString()}`;
+            summaryContainer.appendChild(cloneGapSegment);
+            
+            // display tables
+            var container = document.createElement('div');
+            container.className = 'segment-data-container';
+            displayDiv.appendChild( container );
+
+            template = document.querySelector('#segment-data-template');
+            var cloneSegment = template.content.cloneNode(true);
+            var tbodySegment = cloneSegment.querySelector("tbody");
+            td = cloneSegment.querySelectorAll("td");
+
+            td[0].textContent = "Segment Interval";
+            td[1].textContent = "Interval Size";
+            container.appendChild(cloneSegment);
+
+            var cloneGap = template.content.cloneNode(true);
+            var tbodyGap = cloneGap.querySelector("tbody");
+            td = cloneGap.querySelectorAll("td");
+
+            td[0].textContent = "Gap Interval";
+            td[1].textContent = "Gap Size";
+            container.appendChild(cloneGap);
+
+            segmentCollection.segments.forEach( segment => {
+                template = document.querySelector('#segment-row-template');
+                const cloneSegmentRow = template.content.cloneNode(true);
+                td = cloneSegmentRow.querySelectorAll("td");
+                td[0].textContent = `[${segment.left.toString()}, ${segment.right.toString()}]`; 
+                td[1].textContent = `${segment.size.toString()}`;
+                tbodySegment.appendChild(cloneSegmentRow);
+            });
+
+            segmentCollection.gaps().forEach( segment => {
+                template = document.querySelector('#segment-row-template');
+                const cloneGapRow = template.content.cloneNode(true);
+                td = cloneGapRow.querySelectorAll("td");
+                td[0].textContent = `[${segment.left.toString()}, ${segment.right.toString()}]`; 
+                td[1].textContent = `${segment.size.toString()}`;
+                tbodyGap.appendChild(cloneGapRow);
+            });
+        } else {
+            displayDiv.textContent="This page requires a browser that supports the template html tag";
+        }
+
+    } // end displayInfo
 
     const numberlines = cantor3_4(numIter);
 
     for( let i = 0; i < numberlines.length; i++ ){
-        const [ctx, infoDiv] = createElements(i);
+        var [ctx, infoDiv] = createElements(i);
 
         var width = ctx.canvas.offsetWidth;
         var height = ctx.canvas.offsetHeight;
@@ -339,7 +426,8 @@ function drawAllNumberlines(numIter){
         ctx.fillStyle = 'white';
 
         drawNumberline(ctx, numberlines[i]);
-        //displayInfo(infoDiv, numberlines[i]);
+        displayInfo(infoDiv, numberlines[i]);
+
     };
 }
 
@@ -367,7 +455,6 @@ function createElements(index){
     // create elements for displaying segment and gap info 
     const newCollectionDiv = document.createElement("div");
     newCollectionDiv.className = ".segmentCollection";
-    newCollectionDiv.id = `collection}`;
     newNumContentDiv.appendChild(newCollectionDiv);
 
     // set properties on the canavs
@@ -380,5 +467,5 @@ function createElements(index){
     return [ctx, newCollectionDiv];
 }
 
-drawAllNumberlines(3);
+drawAllNumberlines(5);
 
