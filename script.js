@@ -354,8 +354,8 @@ function drawAllNumberlines(numIter){
             th[1].textContent = "Total Length of Gaps:";
 
             td = cloneGapSegment.querySelectorAll("td");
-            td[0].textContent = `${segmentCollection.count.toString()}`;
-            td[1].textContent = `${segmentCollection.size().toString()}`;
+            td[0].textContent = `${segmentCollection.gaps().length}`;
+            td[1].textContent = `${segmentCollection.gapSize().toString()}`;
             summaryContainer.appendChild(cloneGapSegment);
             
             // display tables
